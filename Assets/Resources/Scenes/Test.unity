@@ -221,6 +221,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73a6e49d3444c2549b01e401eb514ee1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  textureAtlas: {fileID: 2800000, guid: 02f29b86fc554bd4694667c86291f438, type: 3}
 --- !u!4 &674980879
 Transform:
   m_ObjectHideFlags: 0
