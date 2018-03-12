@@ -1,3 +1,4 @@
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,6 +18,10 @@ public static class GUIUtility
     public static Sprite[] GetSprites(this Texture2D texture)
     {
         string path = AssetDatabase.GetAssetPath(texture);
-        return AssetDatabase.LoadAllAssetsAtPath(path) as Sprite[];
+        string directory = Path.GetDirectoryName(path);
+        string file = Path.GetFileNameWithoutExtension(path);
+        directory = directory.Replace("Assets/Resources/", "");
+        path = directory + "/" + file;
+        return Resources.LoadAll<Sprite>(path);
     }
 }

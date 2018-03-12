@@ -49,10 +49,21 @@ public class TilePickerWindow : EditorWindow
 
         using (var scrollView = new EditorGUILayout.ScrollViewScope(scrollPosition))
         {
-            Rect textureRect = EditorGUILayout.GetControlRect();
-            textureRect.width = 320f * zoom;
-            textureRect.height = 320f * zoom;
-            EditorGUI.DrawTextureTransparent(textureRect, tileMap.TextureAtlas, ScaleMode.ScaleToFit);
+
+            Sprite[] sprites = tileMap.TextureAtlas.GetSprites();
+
+            Vector2 position = EditorGUILayout.GetControlRect().position;
+            foreach (Sprite sprite in sprites)
+            {
+                Rect rect = new Rect(
+                    sprite.rect.x / sprite.texture.width,
+                    sprite.rect.y / sprite.texture.height,
+                    sprite.rect.width / sprite.texture.width,
+                    sprite.rect.height / sprite.texture.height
+                );
+                GUI.DrawTextureWithTexCoords(new Rect(position, sprite.rect.size * zoom), tileMap.TextureAtlas, rect);
+                position += new Vector2(sprite.rect.size.x * zoom + 2f, 0f);
+            }
         }
     }
 }
