@@ -12,6 +12,9 @@ public class TilePickerWindow : EditorWindow
     private float zoom;
     private Vector2 scrollPosition;
 
+    private const int outlineSize = 3; // Must be odd
+    private Color outlineColor = Color.green;
+
     private void OnEnable()
     {
         zoom = 1f;
@@ -47,10 +50,11 @@ public class TilePickerWindow : EditorWindow
     {
         zoom = EditorGUILayout.Slider("Zoom", zoom, 0.5f, 4f);
 
-        using (var scrollView = new EditorGUILayout.ScrollViewScope(scrollPosition))
+        using (EditorGUILayout.ScrollViewScope scrollView = new EditorGUILayout.ScrollViewScope(scrollPosition))
         {
+            scrollPosition = scrollView.scrollPosition;
+
             Sprite[] sprites = tileMap.TextureAtlas.GetSprites();
-            tileMap.SpriteSelection = sprites[0];
 
             EditorGUILayout.BeginHorizontal();
 
@@ -62,13 +66,31 @@ public class TilePickerWindow : EditorWindow
                     sprite.rect.width / sprite.texture.width,
                     sprite.rect.height / sprite.texture.height
                 );
-                Rect rect = GUILayoutUtility.GetRect(sprite.rect.width * zoom + 4f, sprite.rect.height * zoom + 4f);
+
+                Rect rect = GUILayoutUtility.GetRect(
+                    sprite.rect.width * zoom + (float)outlineSize * 2f,
+                    sprite.rect.height * zoom + (float)outlineSize * 2f
+                );
+
+                if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && rect.Contains(Event.current.mousePosition))
+                {
+                    tileMap.SpriteSelection = sprite;
+                    Event.current.Use();
+                }
+
                 if (sprite == tileMap.SpriteSelection)
                 {
-                    EditorGUI.DrawRect(rect, Color.green);
-                    EditorGUI.DrawRect(new Rect(rect.position + new Vector2(1f, 1f), rect.size - new Vector2(2f, 2f)), Color.white);
+                    EditorGUI.DrawRect(rect, outlineColor);
+                    EditorGUI.DrawRect(new Rect(
+                        rect.position + new Vector2((float)outlineSize - 1f, (float)outlineSize - 1f),
+                        rect.size - new Vector2((float)outlineSize * 2f - 2f, (float)outlineSize * 2f - 2f)
+                    ), Color.white);
                 }
-                GUI.DrawTextureWithTexCoords(new Rect(rect.position + new Vector2(2f, 2f), rect.size - new Vector2(4f, 4f)), tileMap.TextureAtlas, spriteRect);
+
+                GUI.DrawTextureWithTexCoords(new Rect(
+                    rect.position + new Vector2((float)outlineSize, (float)outlineSize),
+                    rect.size - new Vector2((float)outlineSize * 2f, (float)outlineSize * 2f)
+                ), tileMap.TextureAtlas, spriteRect);
             }
 
             GUILayout.FlexibleSpace();
