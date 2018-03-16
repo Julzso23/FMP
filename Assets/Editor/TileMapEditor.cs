@@ -38,12 +38,14 @@ public class TileMapEditor : Editor
     {
         TileMap tileMap = (TileMap)target;
 
-        Vector3 position = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition).origin;
-        position.x = Mathf.Floor(position.x);
-        position.y = Mathf.Ceil(position.y);
-        position.z = 0f;
+        Vector3 position = GetNewTilePosition();
 
-        if (FindTile(tileMap, position) != null) return;
+        Transform oldTile = FindTile(tileMap, position);
+        if (oldTile != null)
+        {
+            oldTile.GetComponent<SpriteRenderer>().sprite = sprite;
+            return;
+        }
 
         GameObject tile = new GameObject("Tile");
         tile.transform.SetParent(tileMap.transform);
@@ -53,12 +55,7 @@ public class TileMapEditor : Editor
 
     private void RemoveTile()
     {
-        Vector3 position = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition).origin;
-        position.x = Mathf.Floor(position.x);
-        position.y = Mathf.Ceil(position.y);
-        position.z = 0f;
-
-        Transform tile = FindTile((TileMap)target, position);
+        Transform tile = FindTile((TileMap)target, GetNewTilePosition());
         if (tile != null)
         {
             DestroyImmediate(tile.gameObject);
@@ -75,5 +72,14 @@ public class TileMapEditor : Editor
             }
         }
         return null;
+    }
+
+    private Vector3 GetNewTilePosition()
+    {
+        Vector3 position = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition).origin;
+        position.x = Mathf.Floor(position.x);
+        position.y = Mathf.Ceil(position.y);
+        position.z = 0f;
+        return position;
     }
 }
