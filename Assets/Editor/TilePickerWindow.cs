@@ -6,7 +6,7 @@ public class TilePickerWindow : EditorWindow
     [MenuItem("Window/Tile-map Editor/Tile Picker")]
     public static void ShowWindow()
     {
-        EditorWindow.GetWindow<TilePickerWindow>();
+        EditorWindow.GetWindow<TilePickerWindow>("Tile Picker");
     }
 
     private float zoom;
