@@ -28,7 +28,14 @@ public class TilePickerWindow : EditorWindow
             TileMap tileMap = tileMapObject.GetComponent<TileMap>();
             if (tileMap)
             {
-                RenderSpriteAtlas(tileMap);
+                if (tileMap.TextureAtlas != null)
+                {
+                    RenderSpriteAtlas(tileMap);
+                }
+                else
+                {
+                    GUIUtility.ErrorLabel("You must first select a texture atlas");
+                }
             }
             else
             {
