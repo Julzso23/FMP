@@ -22,6 +22,7 @@ public class TileMapEditor : Editor
         };
         layersList.onAddCallback = AddLayer;
         layersList.drawElementCallback = DrawLayerElement;
+        layersList.onRemoveCallback = RemoveLayer;
 
         if (layers.layers.Count == 0)
         {
@@ -41,6 +42,18 @@ public class TileMapEditor : Editor
         layer.name = "New Layer";
         list.list.Add(layer);
         EditorUtility.SetDirty(layers);
+    }
+
+    private void RemoveLayer(ReorderableList list)
+    {
+        Transform layer = GetLayerTransform((TileMap)target, ((TileMapLayers.Layer)list.list[list.index]).name);
+        DestroyImmediate(layer.gameObject);
+        list.list.RemoveAt(list.index);
+
+        if (list.index >= list.list.Count)
+        {
+            list.index--;
+        }
     }
 
     private void DrawLayerElement(Rect rect, int index, bool isActive, bool isFocused)
@@ -66,7 +79,7 @@ public class TileMapEditor : Editor
         string newName = EditorGUI.TextField(rect, layer.name);
         if (layer.name != newName)
         {
-            if (!layers.layers.Exists((TileMapLayers.Layer other) => other.name == newName))
+            if (!layers.layers.Exists((TileMapLayers.Layer other) => other.name == newName) && newName != "")
             {
                 Transform layerObject = ((TileMap)target).transform.Find(layer.name);
                 if (layerObject != null)
@@ -124,6 +137,8 @@ public class TileMapEditor : Editor
 
     private void OnSceneGUI()
     {
+        if (layersList.index == -1) return;
+
         Transform layer = GetLayerTransform((TileMap)target, layers.layers[layersList.index].name);
 
         if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
