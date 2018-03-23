@@ -23,6 +23,7 @@ public class TileMapEditor : Editor
         layersList.onAddCallback = AddLayer;
         layersList.drawElementCallback = DrawLayerElement;
         layersList.onRemoveCallback = RemoveLayer;
+        layersList.onReorderCallback = ReorderLayers;
 
         if (layers.layers.Count == 0)
         {
@@ -53,6 +54,22 @@ public class TileMapEditor : Editor
         if (list.index >= list.list.Count)
         {
             list.index--;
+        }
+    }
+
+    private void ReorderLayers(ReorderableList list)
+    {
+        for (int i = 0; i < list.list.Count; i++)
+        {
+            SetLayerSortingOrder(GetLayerTransform((TileMap)target, ((TileMapLayers.Layer)list.list[i]).name), -i);
+        }
+    }
+
+    private void SetLayerSortingOrder(Transform layer, int sortingOrder)
+    {
+        foreach (Transform tile in layer)
+        {
+            tile.GetComponent<SpriteRenderer>().sortingOrder = sortingOrder;
         }
     }
 
@@ -179,6 +196,7 @@ public class TileMapEditor : Editor
         if (oldTile != null)
         {
             oldTile.GetComponent<SpriteRenderer>().sprite = sprite;
+            oldTile.GetComponent<SpriteRenderer>().sortingOrder = -layersList.index;
             return;
         }
 
@@ -186,6 +204,7 @@ public class TileMapEditor : Editor
         tile.transform.SetParent(layer);
         tile.transform.position = position;
         tile.AddComponent<SpriteRenderer>().sprite = sprite;
+        tile.GetComponent<SpriteRenderer>().sortingOrder = -layersList.index;
     }
 
     private void RemoveTile(Transform layer)
@@ -213,11 +232,11 @@ public class TileMapEditor : Editor
 
     private Transform FindTile(Transform layer, Vector3 position)
     {
-        for (int i = 0; i < layer.childCount; i++)
+        foreach (Transform child in layer)
         {
-            if (layer.GetChild(i).position == position)
+            if (child.position == position)
             {
-                return layer.GetChild(i);
+                return child;
             }
         }
         return null;
