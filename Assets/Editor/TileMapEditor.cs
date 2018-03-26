@@ -150,7 +150,6 @@ public class TileMapEditor : Editor
                                                                                 true);
 
         ((TileMap)target).RenderTexture = (RenderTexture)EditorGUILayout.ObjectField("Render Texture", ((TileMap)target).RenderTexture, typeof(RenderTexture), true);
-        ((TileMap)target).BakingMaterial = (Material)EditorGUILayout.ObjectField("Baking Material", ((TileMap)target).BakingMaterial, typeof(Material), true);
 
         layersList.DoLayoutList();
 
@@ -158,57 +157,62 @@ public class TileMapEditor : Editor
         {
             Transform layer = GetLayerTransform((TileMap)target, layers.layers[layersList.index].name);
 
-            Graphics.SetRenderTarget(((TileMap)target).RenderTexture);
-            GL.Clear(true, true, Color.clear);
+            BakeLayer(layer, ((TileMap)target).RenderTexture);
+        }
+    }
 
-            Vector2 bakedPosition = Vector2.zero;
-            Vector2 bakedSize = new Vector2(32f, 32f);
+    private void BakeLayer(Transform layer, RenderTexture renderTexture)
+    {
+        Graphics.SetRenderTarget(renderTexture);
+        GL.Clear(true, true, Color.clear);
 
-            foreach (Transform tile in layer)
+        Vector2 bakedPosition = Vector2.zero;
+        Vector2 bakedSize = new Vector2(32f, 32f);
+
+        foreach (Transform tile in layer)
+        {
+            Sprite tileSprite = tile.GetComponent<SpriteRenderer>().sprite;
+
+            if (tile.position.x < bakedPosition.x)
             {
-                Sprite tileSprite = tile.GetComponent<SpriteRenderer>().sprite;
-
-                if (tile.position.x < bakedPosition.x)
-                {
-                    bakedPosition.x = tile.position.x;
-                }
-                if (tile.position.y < bakedPosition.y)
-                {
-                    bakedPosition.y = tile.position.y;
-                }
-
-                if (tile.position.x + tileSprite.rect.width > bakedPosition.x + bakedSize.x)
-                {
-                    bakedSize.x = tile.position.x + tileSprite.rect.width - bakedPosition.x;
-                }
-                if (tile.position.y + tileSprite.rect.height > bakedPosition.y + bakedSize.y)
-                {
-                    bakedSize.y = tile.position.y + tileSprite.rect.height - bakedPosition.y;
-                }
+                bakedPosition.x = tile.position.x;
+            }
+            if (tile.position.y < bakedPosition.y)
+            {
+                bakedPosition.y = tile.position.y;
             }
 
-            foreach (Transform tile in layer)
+            if (tile.position.x + tileSprite.rect.width > bakedPosition.x + bakedSize.x)
             {
-                Sprite tileSprite = tile.GetComponent<SpriteRenderer>().sprite;
-
-                const int element = 0;
-                const int mip = 0;
-
-                Graphics.CopyTexture(
-                    tileSprite.texture,
-                    element,
-                    mip,
-                    Mathf.FloorToInt(tileSprite.rect.xMin),
-                    Mathf.FloorToInt(tileSprite.rect.yMin),
-                    Mathf.FloorToInt(tileSprite.rect.width),
-                    Mathf.FloorToInt(tileSprite.rect.height),
-                    ((TileMap)target).RenderTexture,
-                    element,
-                    mip,
-                    Mathf.FloorToInt((tile.position.x - bakedPosition.x) * 32f),
-                    ((TileMap)target).RenderTexture.height - Mathf.FloorToInt((tile.position.y - bakedPosition.y) * 32f) - Mathf.FloorToInt(tileSprite.rect.height)
-                );
+                bakedSize.x = tile.position.x + tileSprite.rect.width - bakedPosition.x;
             }
+            if (tile.position.y + tileSprite.rect.height > bakedPosition.y + bakedSize.y)
+            {
+                bakedSize.y = tile.position.y + tileSprite.rect.height - bakedPosition.y;
+            }
+        }
+
+        foreach (Transform tile in layer)
+        {
+            Sprite tileSprite = tile.GetComponent<SpriteRenderer>().sprite;
+
+            const int element = 0;
+            const int mip = 0;
+
+            Graphics.CopyTexture(
+                tileSprite.texture,
+                element,
+                mip,
+                Mathf.FloorToInt(tileSprite.rect.xMin),
+                Mathf.FloorToInt(tileSprite.rect.yMin),
+                Mathf.FloorToInt(tileSprite.rect.width),
+                Mathf.FloorToInt(tileSprite.rect.height),
+                renderTexture,
+                element,
+                mip,
+                Mathf.FloorToInt((tile.position.x - bakedPosition.x) * 32f),
+                renderTexture.height - Mathf.FloorToInt((tile.position.y - bakedPosition.y) * 32f) - Mathf.FloorToInt(tileSprite.rect.height)
+            );
         }
     }
 

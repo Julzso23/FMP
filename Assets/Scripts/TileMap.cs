@@ -4,7 +4,6 @@ public class TileMap : MonoBehaviour
 {
     public Sprite SpriteSelection { get; set; }
     public Texture2D TextureAtlas { get; set; }
-    public Material BakingMaterial { get; set; }
     public RenderTexture RenderTexture { get;set; }
 
     private void OnDrawGizmos()
