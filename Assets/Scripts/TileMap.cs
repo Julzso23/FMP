@@ -4,7 +4,8 @@ public class TileMap : MonoBehaviour
 {
     public Sprite SpriteSelection { get; set; }
     public Texture2D TextureAtlas { get; set; }
-    public RenderTexture RenderTexture { get;set; }
+    public Texture2D[] LayerTextures { get; set; }
+    public Transform Canvas { get; set; }
 
     private void OnDrawGizmos()
     {

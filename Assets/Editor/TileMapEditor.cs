@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEditorInternal;
 using System.Collections.Generic;
 
@@ -144,30 +145,49 @@ public class TileMapEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        ((TileMap)target).TextureAtlas = (Texture2D)EditorGUILayout.ObjectField("Texture Atlas",
-                                                                                ((TileMap)target).TextureAtlas,
-                                                                                typeof(Texture2D),
-                                                                                true);
+        TileMap tileMap = (TileMap)target;
 
-        ((TileMap)target).RenderTexture = (RenderTexture)EditorGUILayout.ObjectField("Render Texture", ((TileMap)target).RenderTexture, typeof(RenderTexture), true);
+        tileMap.TextureAtlas =
+            (Texture2D)EditorGUILayout.ObjectField(
+                "Texture Atlas",
+                tileMap.TextureAtlas,
+                typeof(Texture2D),
+                true
+            );
 
         layersList.DoLayoutList();
 
+        tileMap.Canvas = (Transform)EditorGUILayout.ObjectField("Canvas", tileMap.Canvas, typeof(Transform), true);
         if (GUILayout.Button("Bake Textures"))
         {
-            Transform layer = GetLayerTransform((TileMap)target, layers.layers[layersList.index].name);
+            List<Transform> children = new List<Transform>();
+            foreach (Transform child in tileMap.Canvas)
+            {
+                children.Add(child);
+            }
+            foreach (Transform child in children)
+            {
+                DestroyImmediate(child.gameObject);
+            }
 
-            BakeLayer(layer, ((TileMap)target).RenderTexture);
+            tileMap.LayerTextures = new Texture2D[layers.layers.Count];
+            for (int i = 0; i < layers.layers.Count; i++)
+            {
+                Debug.Log(i);
+                Transform layerTransform = GetLayerTransform(tileMap, layers.layers[i].name);
+                tileMap.LayerTextures[i] = BakeLayer(layerTransform);
+                GameObject bakedLayer = new GameObject(layers.layers[i].name);
+                bakedLayer.transform.SetParent(tileMap.Canvas);
+                bakedLayer.AddComponent<RawImage>().texture = tileMap.LayerTextures[i];
+            }
         }
     }
 
-    private void BakeLayer(Transform layer, RenderTexture renderTexture)
+    private Texture2D BakeLayer(Transform layer)
     {
-        Graphics.SetRenderTarget(renderTexture);
-        GL.Clear(true, true, Color.clear);
-
         Vector2 bakedPosition = Vector2.zero;
-        Vector2 bakedSize = new Vector2(32f, 32f);
+        Vector2 bakedSize = new Vector2(1f, 1f);
+        const int tileSize = 32;
 
         foreach (Transform tile in layer)
         {
@@ -192,6 +212,8 @@ public class TileMapEditor : Editor
             }
         }
 
+        Texture2D texture = new Texture2D(Mathf.FloorToInt(bakedSize.x) * tileSize, Mathf.FloorToInt(bakedSize.y) * tileSize);
+
         foreach (Transform tile in layer)
         {
             Sprite tileSprite = tile.GetComponent<SpriteRenderer>().sprite;
@@ -200,20 +222,27 @@ public class TileMapEditor : Editor
             const int mip = 0;
 
             Graphics.CopyTexture(
-                tileSprite.texture,
-                element,
-                mip,
-                Mathf.FloorToInt(tileSprite.rect.xMin),
-                Mathf.FloorToInt(tileSprite.rect.yMin),
-                Mathf.FloorToInt(tileSprite.rect.width),
-                Mathf.FloorToInt(tileSprite.rect.height),
-                renderTexture,
-                element,
-                mip,
-                Mathf.FloorToInt((tile.position.x - bakedPosition.x) * 32f),
-                renderTexture.height - Mathf.FloorToInt((tile.position.y - bakedPosition.y) * 32f) - Mathf.FloorToInt(tileSprite.rect.height)
+                tileSprite.texture,                                                                 // Source texture
+                element,                                                                            // Source element
+                mip,                                                                                // Source mip level
+                Mathf.FloorToInt(tileSprite.rect.xMin),                                             // Source X
+                Mathf.FloorToInt(tileSprite.rect.yMin),                                             // Source Y
+                Mathf.FloorToInt(tileSprite.rect.width),                                            // Source width
+                Mathf.FloorToInt(tileSprite.rect.height),                                           // Source height
+                texture,                                                                            // Destination texture
+                element,                                                                            // Destination element
+                mip,                                                                                // Destination mip level
+                Mathf.FloorToInt((tile.position.x - bakedPosition.x) * tileSize),                   // Destination X
+                texture.height - Mathf.FloorToInt((tile.position.y - bakedPosition.y) * tileSize) -
+                    Mathf.FloorToInt(tileSprite.rect.height)                                        // Destination Y
             );
         }
+
+        Color[] colours = new Color[texture.width * texture.height];
+        for (int i = 0; i < texture.width * texture.height; i++) colours[i] = Color.red;
+        texture.SetPixels(0, 0, texture.width, texture.height, colours);
+
+        return texture;
     }
 
     private void OnSceneGUI()
