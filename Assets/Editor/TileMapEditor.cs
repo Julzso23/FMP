@@ -157,11 +157,11 @@ public class TileMapEditor : Editor
 
         layersList.DoLayoutList();
 
-        tileMap.Canvas = (Transform)EditorGUILayout.ObjectField("Canvas", tileMap.Canvas, typeof(Transform), true);
+        tileMap.BakedTileMap = (Transform)EditorGUILayout.ObjectField("Baked Tile Map", tileMap.BakedTileMap, typeof(Transform), true);
         if (GUILayout.Button("Bake Textures"))
         {
             List<Transform> children = new List<Transform>();
-            foreach (Transform child in tileMap.Canvas)
+            foreach (Transform child in tileMap.BakedTileMap)
             {
                 children.Add(child);
             }
@@ -171,76 +171,120 @@ public class TileMapEditor : Editor
             }
 
             tileMap.LayerTextures = new Texture2D[layers.layers.Count];
+            tileMap.LayerSprites = new Sprite[layers.layers.Count];
             for (int i = 0; i < layers.layers.Count; i++)
             {
-                Debug.Log(i);
                 Transform layerTransform = GetLayerTransform(tileMap, layers.layers[i].name);
-                tileMap.LayerTextures[i] = BakeLayer(layerTransform);
+                Vector2 layerPosition;
+
+                tileMap.LayerTextures[i] = BakeLayer(layerTransform, out layerPosition);
+                tileMap.LayerSprites[i] = Sprite.Create(
+                    tileMap.LayerTextures[i],
+                    new Rect(
+                        Vector2.zero,
+                        new Vector2(tileMap.LayerTextures[i].width, tileMap.LayerTextures[i].height)
+                    ),
+                    new Vector2(0f, 1f),
+                    32f
+                );
+
                 GameObject bakedLayer = new GameObject(layers.layers[i].name);
-                bakedLayer.transform.SetParent(tileMap.Canvas);
-                bakedLayer.AddComponent<RawImage>().texture = tileMap.LayerTextures[i];
+                bakedLayer.transform.SetParent(tileMap.BakedTileMap);
+                bakedLayer.transform.position = layerPosition;
+                SpriteRenderer renderer = bakedLayer.AddComponent<SpriteRenderer>();
+                renderer.sprite = tileMap.LayerSprites[i];
+                renderer.sortingOrder = -i;
             }
         }
     }
 
-    private Texture2D BakeLayer(Transform layer)
+    private Texture2D BakeLayer(Transform layer, out Vector2 offset)
     {
-        Vector2 bakedPosition = Vector2.zero;
-        Vector2 bakedSize = new Vector2(1f, 1f);
-        const int tileSize = 32;
+        Rect rect = new Rect();
+        bool firstTile = true;
 
         foreach (Transform tile in layer)
         {
-            Sprite tileSprite = tile.GetComponent<SpriteRenderer>().sprite;
+            Sprite sprite = tile.GetComponent<SpriteRenderer>().sprite;
 
-            if (tile.position.x < bakedPosition.x)
+            if (firstTile)
             {
-                bakedPosition.x = tile.position.x;
-            }
-            if (tile.position.y < bakedPosition.y)
-            {
-                bakedPosition.y = tile.position.y;
+                firstTile = false;
+                rect = new Rect(
+                    new Vector2(tile.position.x * sprite.rect.size.x, tile.position.y * sprite.rect.size.y),
+                    sprite.rect.size
+                );
             }
 
-            if (tile.position.x + tileSprite.rect.width > bakedPosition.x + bakedSize.x)
+            if (tile.position.x * sprite.rect.width < rect.x)
             {
-                bakedSize.x = tile.position.x + tileSprite.rect.width - bakedPosition.x;
+                rect.x = tile.position.x * sprite.rect.width;
             }
-            if (tile.position.y + tileSprite.rect.height > bakedPosition.y + bakedSize.y)
+            if (tile.position.y * sprite.rect.height < rect.y)
             {
-                bakedSize.y = tile.position.y + tileSprite.rect.height - bakedPosition.y;
+                rect.y = tile.position.y * sprite.rect.height;
+            }
+
+            if ((tile.position.x + 1) * sprite.rect.width > rect.xMax)
+            {
+                rect.xMax = (tile.position.x + 1) * sprite.rect.width;
+            }
+            if ((tile.position.y + 1) * sprite.rect.height > rect.yMax)
+            {
+                rect.yMax = (tile.position.y + 1) * sprite.rect.height;
             }
         }
 
-        Texture2D texture = new Texture2D(Mathf.FloorToInt(bakedSize.x) * tileSize, Mathf.FloorToInt(bakedSize.y) * tileSize);
+        offset = rect.position / 32f;
+
+        Texture2D texture = new Texture2D(Mathf.FloorToInt(rect.width), Mathf.FloorToInt(rect.height), TextureFormat.ARGB32, false);
+        texture.filterMode = FilterMode.Point;
+
+        for (int x = 0; x < texture.width; x++)
+        {
+            for (int y = 0; y < texture.height; y++)
+            {
+                texture.SetPixel(x, y, Color.clear);
+            }
+            texture.SetPixel(x, 0, Color.red);
+            texture.SetPixel(x, texture.height - 1, Color.red);
+        }
+        for (int y = 0; y < texture.height; y++)
+        {
+            texture.SetPixel(0, y, Color.red);
+            texture.SetPixel(texture.width - 1, y, Color.red);
+        }
+        texture.Apply();
+
+        Debug.Log(texture.height);
 
         foreach (Transform tile in layer)
         {
-            Sprite tileSprite = tile.GetComponent<SpriteRenderer>().sprite;
+            Sprite sprite = tile.GetComponent<SpriteRenderer>().sprite;
 
             const int element = 0;
             const int mip = 0;
 
+            Vector2 destinationPosition = new Vector2(
+                tile.position.x * sprite.rect.width - rect.xMin,
+                texture.height + (tile.position.y + 1) * sprite.rect.height + rect.yMin
+            );
+
             Graphics.CopyTexture(
-                tileSprite.texture,                                                                 // Source texture
-                element,                                                                            // Source element
-                mip,                                                                                // Source mip level
-                Mathf.FloorToInt(tileSprite.rect.xMin),                                             // Source X
-                Mathf.FloorToInt(tileSprite.rect.yMin),                                             // Source Y
-                Mathf.FloorToInt(tileSprite.rect.width),                                            // Source width
-                Mathf.FloorToInt(tileSprite.rect.height),                                           // Source height
-                texture,                                                                            // Destination texture
-                element,                                                                            // Destination element
-                mip,                                                                                // Destination mip level
-                Mathf.FloorToInt((tile.position.x - bakedPosition.x) * tileSize),                   // Destination X
-                texture.height - Mathf.FloorToInt((tile.position.y - bakedPosition.y) * tileSize) -
-                    Mathf.FloorToInt(tileSprite.rect.height)                                        // Destination Y
+                sprite.texture,                                                                         // Source texture
+                element,                                                                                // Source element
+                mip,                                                                                    // Source mip level
+                Mathf.FloorToInt(sprite.rect.xMin),                                                     // Source X
+                Mathf.FloorToInt(sprite.rect.yMin),                                                     // Source Y
+                Mathf.FloorToInt(sprite.rect.width),                                                    // Source width
+                Mathf.FloorToInt(sprite.rect.height),                                                   // Source height
+                texture,                                                                                // Destination texture
+                element,                                                                                // Destination element
+                mip,                                                                                    // Destination mip level
+                Mathf.FloorToInt(destinationPosition.x),                   // Destination X
+                Mathf.FloorToInt(destinationPosition.y)   // Destination Y
             );
         }
-
-        Color[] colours = new Color[texture.width * texture.height];
-        for (int i = 0; i < texture.width * texture.height; i++) colours[i] = Color.red;
-        texture.SetPixels(0, 0, texture.width, texture.height, colours);
 
         return texture;
     }
