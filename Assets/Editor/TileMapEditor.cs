@@ -196,6 +196,15 @@ public class TileMapEditor : Editor
                 SpriteRenderer renderer = bakedLayer.AddComponent<SpriteRenderer>();
                 renderer.sprite = tileMap.LayerSprites[i];
                 renderer.sortingOrder = -i;
+
+                foreach (Transform tile in layerTransform)
+                {
+                    Sprite sprite = tile.GetComponent<SpriteRenderer>().sprite;
+                    BoxCollider2D collider =  bakedLayer.AddComponent<BoxCollider2D>();
+                    collider.size = sprite.rect.size / 32f;
+                    Vector2 offset = tile.position - bakedLayer.transform.position;
+                    collider.offset = new Vector2(offset.x + collider.size.x / 2f, offset.y - collider.size.y / 2f);
+                }
             }
         }
     }
@@ -243,17 +252,6 @@ public class TileMapEditor : Editor
             }
         }
 
-        // Debugging red outline
-        // for (int x = 0; x < texture.width; x++)
-        // {
-        //     texture.SetPixel(x, 0, Color.red);
-        //     texture.SetPixel(x, texture.height - 1, Color.red);
-        // }
-        // for (int y = 0; y < texture.height; y++)
-        // {
-        //     texture.SetPixel(0, y, Color.red);
-        //     texture.SetPixel(texture.width - 1, y, Color.red);
-        // }
         texture.Apply();
 
         foreach (Transform tile in layer)
