@@ -9,6 +9,7 @@ public class TileMapEditor : Editor
 {
     private TileMapLayers layers;
     private ReorderableList layersList;
+    private string levelFileName = "";
 
     private void OnEnable()
     {
@@ -206,6 +207,16 @@ public class TileMapEditor : Editor
                     collider.offset = new Vector2(offset.x + collider.size.x / 2f, offset.y - collider.size.y / 2f);
                 }
             }
+        }
+
+        levelFileName = EditorGUILayout.TextField("File Name", levelFileName);
+        if (GUILayout.Button("Save Level to File"))
+        {
+            LevelFileSystem.SaveLevel(tileMap.transform, levelFileName);
+        }
+        if (GUILayout.Button("Load Level from File"))
+        {
+            LevelFileSystem.LoadLevel(tileMap.transform, levelFileName);
         }
     }
 
