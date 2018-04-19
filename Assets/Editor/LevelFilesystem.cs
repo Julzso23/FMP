@@ -9,7 +9,8 @@ public static class LevelFileSystem
     [Serializable]
     private class Tile
     {
-        public Sprite sprite;
+        public string spritePath;
+        public string spriteName;
         public int sortingOrder;
         public Vector2 position;
     }
@@ -83,7 +84,8 @@ public static class LevelFileSystem
     {
         return new Tile()
         {
-            sprite = tile.GetComponent<SpriteRenderer>().sprite,
+            spritePath = AssetDatabase.GetAssetPath(tile.GetComponent<SpriteRenderer>().sprite),
+            spriteName = tile.GetComponent<SpriteRenderer>().sprite.name,
             sortingOrder = tile.GetComponent<SpriteRenderer>().sortingOrder,
             position = tile.position
         };
@@ -119,7 +121,21 @@ public static class LevelFileSystem
         GameObject tileObject = new GameObject("Tile");
         tileObject.transform.SetParent(layer);
         tileObject.transform.position = tile.position;
-        tileObject.AddComponent<SpriteRenderer>().sprite = tile.sprite;
+        tileObject.AddComponent<SpriteRenderer>().sprite = LoadSprite(tile.spritePath, tile.spriteName);
         tileObject.GetComponent<SpriteRenderer>().sortingOrder = tile.sortingOrder;
+    }
+
+    private static Sprite LoadSprite(string path, string name)
+    {
+        object[] sprites = AssetDatabase.LoadAllAssetsAtPath(path);
+        foreach (object sprite in sprites)
+        {
+            if (sprite as Sprite != null && (sprite as Sprite).name == name)
+            {
+                return sprite as Sprite;
+            }
+        }
+
+        return null;
     }
 }
