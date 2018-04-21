@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 public class PlayerController : MonoBehaviour
 {
@@ -6,6 +7,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float moveSpeed;
     [SerializeField] private float jumpSpeed;
     private bool grounded = false;
+
+    public static Action<PlayerController> OnGroundCollision;
+    public static Action<PlayerController> OnJump;
 
     private void Start()
     {
@@ -19,6 +23,7 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButton("Jump") && grounded)
         {
             newVelocity.y = jumpSpeed;
+            OnJump(this);
         }
 
         rigidbody.velocity = newVelocity;
@@ -33,6 +38,8 @@ public class PlayerController : MonoBehaviour
             if ((Mathf.Abs(point.normal.x) <= 0.5f) && (point.normal.y > 0f))
             {
                 grounded = true;
+                OnGroundCollision(this);
+                break;
             }
         }
     }
