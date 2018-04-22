@@ -11,7 +11,7 @@ public static class CollisionBaking
         }
     }
 
-    private static void BakeLayer(Transform layer)
+    private static List<List<Vector2>> BakeLayer(Transform layer)
     {
         List<Vector2> corners = new List<Vector2>();
 
@@ -33,6 +33,45 @@ public static class CollisionBaking
                 }
             }
         }
+
+        if (corners.Count == 0)
+        {
+            return null;
+        }
+
+        List<List<Vector2>> paths = new List<List<Vector2>>();
+
+        int currentPath = 0;
+
+        while (corners.Count != 0)
+        {
+            if (currentPath + 1 > paths.Count)
+            {
+                paths.Add(new List<Vector2>());
+            }
+
+            int currentCorner = 0;
+            paths[currentPath].Add(corners[0]);
+            corners.Remove(corners[0]);
+
+            while (!IsConnected(paths[currentPath][0], paths[currentPath][paths[currentPath].Count - 1], layer))
+            {
+                foreach (Vector2 corner in corners)
+                {
+                    if (IsConnected(corner, paths[currentPath][currentCorner], layer))
+                    {
+                        paths[currentPath].Add(corner);
+                        currentCorner++;
+                        corners.Remove(corner);
+                        break;
+                    }
+                }
+            }
+
+            currentPath++;
+        }
+
+        return paths;
     }
 
     private static bool IsCorner(Vector2 position, Transform layer)
@@ -61,6 +100,11 @@ public static class CollisionBaking
 
     private static bool IsConnected(Vector2 position1, Vector2 position2, Transform layer)
     {
+        if (position1 == position2)
+        {
+            return false;
+        }
+
         if ((position1.x != position2.x) && (position1.y == position2.y))
         {
             if (position1.x > position2.x)
