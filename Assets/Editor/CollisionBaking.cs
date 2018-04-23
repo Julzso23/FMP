@@ -1,17 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 public static class CollisionBaking
 {
-    public static void BakeLevel(Transform level)
-    {
-        foreach (Transform layer in level)
-        {
-            BakeLayer(layer);
-        }
-    }
-
-    private static List<List<Vector2>> BakeLayer(Transform layer)
+    public static List<List<Vector2>> BakeLayer(Transform layer)
     {
         List<Vector2> corners = new List<Vector2>();
 
@@ -27,7 +20,7 @@ public static class CollisionBaking
 
             foreach (Vector2 position in positions)
             {
-                if (IsCorner(position, layer))
+                if (IsCorner(position, layer) && !corners.Contains(position))
                 {
                     corners.Add(position);
                 }
@@ -54,7 +47,9 @@ public static class CollisionBaking
             paths[currentPath].Add(corners[0]);
             corners.Remove(corners[0]);
 
-            while (!IsConnected(paths[currentPath][0], paths[currentPath][paths[currentPath].Count - 1], layer))
+            Stopwatch watch = Stopwatch.StartNew();
+
+            while ((paths[currentPath].Count < 3) || !IsConnected(paths[currentPath][0], paths[currentPath][paths[currentPath].Count - 1], layer))
             {
                 foreach (Vector2 corner in corners)
                 {
@@ -65,6 +60,11 @@ public static class CollisionBaking
                         corners.Remove(corner);
                         break;
                     }
+                }
+                if (watch.ElapsedMilliseconds > 2000)
+                {
+                    watch.Stop();
+                    break;
                 }
             }
 
@@ -114,6 +114,12 @@ public static class CollisionBaking
                 position1 = temp;
             }
 
+            if (HasTile(layer, new Vector2(position1.x, position1.y)) &&
+                HasTile(layer, new Vector2(position1.x, position1.y + 1f)))
+            {
+                return false;
+            }
+
             for (float x = position1.x + 1; x < position2.x; x++)
             {
                 if (GetAdjacentTileCount(new Vector2(x, position1.y), layer) != 2)
@@ -134,6 +140,12 @@ public static class CollisionBaking
                 position1 = temp;
             }
 
+            if (HasTile(layer, new Vector2(position2.x, position2.y)) &&
+                HasTile(layer, new Vector2(position2.x - 1f, position2.y)))
+            {
+                return false;
+            }
+
             for (float y = position1.y + 1; y < position2.y; y++)
             {
                 if (GetAdjacentTileCount(new Vector2(position1.x, y), layer) != 2)
@@ -150,9 +162,9 @@ public static class CollisionBaking
 
     private static bool HasTile(Transform layer, Vector2 position)
     {
-        foreach (Transform child in layer)
+        foreach (Transform tile in layer)
         {
-            if ((Vector2)child.position == position)
+            if ((Vector2)tile.position == position)
             {
                 return true;
             }

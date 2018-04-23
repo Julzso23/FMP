@@ -23,7 +23,11 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButton("Jump") && grounded)
         {
             newVelocity.y = jumpSpeed;
-            OnJump(this);
+
+            if (OnJump != null)
+            {
+                OnJump(this);
+            }
         }
 
         rigidbody.velocity = newVelocity;
@@ -38,7 +42,12 @@ public class PlayerController : MonoBehaviour
             if ((Mathf.Abs(point.normal.x) <= 0.5f) && (point.normal.y > 0f))
             {
                 grounded = true;
-                OnGroundCollision(this);
+
+                if (OnGroundCollision != null)
+                {
+                    OnGroundCollision(this);
+                }
+
                 break;
             }
         }

@@ -159,7 +159,7 @@ public class TileMapEditor : Editor
         layersList.DoLayoutList();
 
         tileMap.BakedTileMap = (Transform)EditorGUILayout.ObjectField("Baked Tile Map", tileMap.BakedTileMap, typeof(Transform), true);
-        if (GUILayout.Button("Bake Textures"))
+        if (GUILayout.Button("Bake Level"))
         {
             List<Transform> children = new List<Transform>();
             foreach (Transform child in tileMap.BakedTileMap)
@@ -198,13 +198,17 @@ public class TileMapEditor : Editor
                 renderer.sprite = tileMap.LayerSprites[i];
                 renderer.sortingOrder = -i;
 
-                foreach (Transform tile in layerTransform)
+                PolygonCollider2D collider = bakedLayer.AddComponent<PolygonCollider2D>();
+                List<List<Vector2>> paths = CollisionBaking.BakeLayer(layerTransform);
+                collider.pathCount = paths.Count;
+                for (int pathIndex = 0; pathIndex < paths.Count; pathIndex++)
                 {
-                    Sprite sprite = tile.GetComponent<SpriteRenderer>().sprite;
-                    BoxCollider2D collider =  bakedLayer.AddComponent<BoxCollider2D>();
-                    collider.size = sprite.rect.size / 32f;
-                    Vector2 offset = tile.position - bakedLayer.transform.position;
-                    collider.offset = new Vector2(offset.x + collider.size.x / 2f, offset.y - collider.size.y / 2f);
+                    Vector2[] path = paths[pathIndex].ToArray();
+                    for (int pointIndex = 0; pointIndex < path.Length; pointIndex++)
+                    {
+                        path[pointIndex] -= (Vector2)bakedLayer.transform.position;
+                    }
+                    collider.SetPath(pathIndex, path);
                 }
             }
         }
