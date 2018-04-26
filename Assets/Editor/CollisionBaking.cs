@@ -12,12 +12,13 @@ public static class CollisionBaking
         {
             Vector2[] positions = new Vector2[]
             {
-                tile.position,
-                (Vector2)tile.position + Vector2.right,
-                (Vector2)tile.position + Vector2.down,
-                (Vector2)tile.position + new Vector2(1f, -1f)
+                tile.position, // Top-left
+                (Vector2)tile.position + Vector2.right, // Top-right
+                (Vector2)tile.position + Vector2.down, // Bottom-left
+                (Vector2)tile.position + new Vector2(1f, -1f) // Bottom-right
             };
 
+            // Check if any of the tile's corners are corners of the level as a whole
             foreach (Vector2 position in positions)
             {
                 if (IsCorner(position, layer) && !corners.Contains(position))
@@ -27,6 +28,7 @@ public static class CollisionBaking
             }
         }
 
+        // Don't try to bake the collision if there aren't any corners
         if (corners.Count == 0)
         {
             return null;
@@ -38,19 +40,23 @@ public static class CollisionBaking
 
         while (corners.Count != 0)
         {
+            // Add a new path
             if (currentPath + 1 > paths.Count)
             {
                 paths.Add(new List<Vector2>());
             }
 
+            // Add the first corner
             int currentCorner = 0;
             paths[currentPath].Add(corners[0]);
             corners.Remove(corners[0]);
 
             Stopwatch watch = Stopwatch.StartNew();
 
+            // End the path when the two ends connect
             while ((paths[currentPath].Count < 3) || !IsConnected(paths[currentPath][0], paths[currentPath][paths[currentPath].Count - 1], layer))
             {
+                // Find the next corner that connects to the path
                 foreach (Vector2 corner in corners)
                 {
                     if (IsConnected(corner, paths[currentPath][currentCorner], layer))
@@ -61,6 +67,8 @@ public static class CollisionBaking
                         break;
                     }
                 }
+
+                // Add 2 second timeout to stop freezing if baking fails
                 if (watch.ElapsedMilliseconds > 2000)
                 {
                     watch.Stop();
@@ -78,6 +86,7 @@ public static class CollisionBaking
     {
         int adjacentCount = GetAdjacentTileCount(position, layer);
 
+        // A corner point will always have either 1 or 3 adjacent tiles
         if (adjacentCount == 1 || adjacentCount == 3)
         {
             return true;
@@ -90,10 +99,10 @@ public static class CollisionBaking
     {
         int adjacentCount = 0;
 
-        if (HasTile(layer, position + new Vector2(-1f, 1f))) adjacentCount++;
-        if (HasTile(layer, position + Vector2.up)) adjacentCount++;
-        if (HasTile(layer, position + Vector2.left)) adjacentCount++;
-        if (HasTile(layer, position)) adjacentCount++;
+        if (HasTile(layer, position + new Vector2(-1f, 1f))) adjacentCount++; // Top-left
+        if (HasTile(layer, position + Vector2.up)) adjacentCount++; // Top-right
+        if (HasTile(layer, position + Vector2.left)) adjacentCount++; // Bottom-left
+        if (HasTile(layer, position)) adjacentCount++; // Bottom-right
 
         return adjacentCount;
     }
@@ -105,8 +114,10 @@ public static class CollisionBaking
             return false;
         }
 
+        // x-axis connection
         if ((position1.x != position2.x) && (position1.y == position2.y))
         {
+            // Make sure the smallest point is first
             if (position1.x > position2.x)
             {
                 Vector2 temp = position2;
@@ -114,6 +125,7 @@ public static class CollisionBaking
                 position1 = temp;
             }
 
+            // Check for tile collision
             if (HasTile(layer, new Vector2(position1.x, position1.y)) &&
                 HasTile(layer, new Vector2(position1.x, position1.y + 1f)))
             {
@@ -122,6 +134,7 @@ public static class CollisionBaking
 
             for (float x = position1.x + 1; x < position2.x; x++)
             {
+                // Check for tiles forming an edge
                 if (GetAdjacentTileCount(new Vector2(x, position1.y), layer) != 2)
                 {
                     return false;
@@ -131,8 +144,10 @@ public static class CollisionBaking
             return true;
         }
 
+        // y-axis connection
         if ((position1.x == position2.x) && (position1.y != position2.y))
         {
+            // Make sure the smallest point is first
             if (position1.y > position2.y)
             {
                 Vector2 temp = position2;
@@ -140,6 +155,7 @@ public static class CollisionBaking
                 position1 = temp;
             }
 
+            // Check for tile collision
             if (HasTile(layer, new Vector2(position2.x, position2.y)) &&
                 HasTile(layer, new Vector2(position2.x - 1f, position2.y)))
             {
@@ -148,6 +164,7 @@ public static class CollisionBaking
 
             for (float y = position1.y + 1; y < position2.y; y++)
             {
+                // Check for tiles forming an edge
                 if (GetAdjacentTileCount(new Vector2(position1.x, y), layer) != 2)
                 {
                     return false;
@@ -162,6 +179,7 @@ public static class CollisionBaking
 
     private static bool HasTile(Transform layer, Vector2 position)
     {
+        // Look for tiles at this position
         foreach (Transform tile in layer)
         {
             if ((Vector2)tile.position == position)
