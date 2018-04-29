@@ -12,6 +12,7 @@ public class UnitTestingWindow : EditorWindow
         public bool success;
     }
 
+    // Menu item to open the window
     [MenuItem("Window/Unit Testing")]
     private static void ShowWindow()
     {
@@ -24,6 +25,7 @@ public class UnitTestingWindow : EditorWindow
 
     private void OnEnable()
     {
+        // Add all the unit tests
         tests.Add(UnitTests.Test1);
         tests.Add(UnitTests.Test2);
     }
@@ -35,6 +37,7 @@ public class UnitTestingWindow : EditorWindow
             RunTests();
         }
 
+        // If the tests have been run, display the results
         if (results.Count != 0)
         {
             GUILayout.Label("Results:");
@@ -55,6 +58,7 @@ public class UnitTestingWindow : EditorWindow
         results = new List<TestResult>();
         overallResult = true;
 
+        // Run all the tests
         foreach (Func<bool> test in tests)
         {
             TestResult result = new TestResult()
@@ -63,6 +67,7 @@ public class UnitTestingWindow : EditorWindow
                 success = true
             };
 
+            // Keep track of the test success
             if (!test())
             {
                 overallResult = false;
@@ -73,6 +78,7 @@ public class UnitTestingWindow : EditorWindow
         }
     }
 
+    // Convert a success boolean to a string
     private string GetSuccessString(bool success)
     {
         if (success)

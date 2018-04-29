@@ -67,8 +67,10 @@ public class TilePickerWindow : EditorWindow
 
             EditorGUILayout.BeginHorizontal();
 
+            // Draw all the available sprites
             foreach (Sprite sprite in sprites)
             {
+                // Convert sprite rect to texture coordinates
                 Rect spriteRect = new Rect(
                     sprite.rect.x / sprite.texture.width,
                     sprite.rect.y / sprite.texture.height,
@@ -81,12 +83,14 @@ public class TilePickerWindow : EditorWindow
                     sprite.rect.height * zoom + (float)outlineSize * 2f
                 );
 
+                // If the user clicks on the sprite, set it as the current selection
                 if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && rect.Contains(Event.current.mousePosition))
                 {
                     tileMap.SpriteSelection = sprite;
                     Event.current.Use();
                 }
 
+                // If the sprite is selected, draw an outline
                 if (sprite == tileMap.SpriteSelection)
                 {
                     EditorGUI.DrawRect(rect, outlineColor);
@@ -96,6 +100,7 @@ public class TilePickerWindow : EditorWindow
                     ), Color.white);
                 }
 
+                // Draw the sprite
                 GUI.DrawTextureWithTexCoords(new Rect(
                     rect.position + new Vector2((float)outlineSize, (float)outlineSize),
                     rect.size - new Vector2((float)outlineSize * 2f, (float)outlineSize * 2f)
