@@ -38,6 +38,7 @@ public static class LevelFileSystem
         string path = "Assets/" + fileName + ".json";
         File.WriteAllText(path, jsonString);
 
+        // Notify user about the file created
         AssetDatabase.Refresh();
         TextAsset asset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
         EditorGUIUtility.PingObject(asset);

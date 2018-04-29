@@ -4,12 +4,14 @@ public static class TileMapBaking
 {
     public static Texture2D BakeLayerTexture(Transform layer, out Vector2 offset)
     {
+        // Layer outer bounds
         Rect rect = new Rect(Vector2.zero, Vector2.zero);
 
         foreach (Transform tile in layer)
         {
             Sprite sprite = tile.GetComponent<SpriteRenderer>().sprite;
 
+            // If the tile is outside the bounds of the level, expand the bounds
             if (tile.position.x * sprite.rect.width < rect.xMin)
             {
                 rect.xMin = tile.position.x * sprite.rect.width;
@@ -33,6 +35,7 @@ public static class TileMapBaking
         rect.y = rect.yMax;
         offset = rect.position / 32f;
 
+        // Create a new texture for the level
         Texture2D texture = new Texture2D(Mathf.FloorToInt(rect.width), Mathf.FloorToInt(rect.height), TextureFormat.ARGB32, false);
         texture.filterMode = FilterMode.Point;
 
@@ -45,20 +48,24 @@ public static class TileMapBaking
             }
         }
 
+        // Apply the new pixels to the texture
         texture.Apply();
 
         foreach (Transform tile in layer)
         {
+            // Get tile sprite
             Sprite sprite = tile.GetComponent<SpriteRenderer>().sprite;
 
             const int element = 0;
             const int mip = 0;
 
+            // Convert the tile's world position into texture coordinates
             Vector2 destinationPosition = new Vector2(
                 tile.position.x * sprite.rect.width - rect.xMin,
                 texture.height + ((tile.position.y - 1f) * sprite.rect.height - rect.y)
             );
 
+            // Copy the tile sprite into the layer texture
             Graphics.CopyTexture(
                 sprite.texture,                            // Source texture
                 element,                                   // Source element

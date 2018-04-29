@@ -22,6 +22,7 @@ public class TilePickerWindow : EditorWindow
 
     private void OnGUI()
     {
+        // Make sure everything is setup correctly before displaying sprites
         GameObject tileMapObject = Selection.activeGameObject;
         if (tileMapObject)
         {
@@ -50,6 +51,7 @@ public class TilePickerWindow : EditorWindow
 
     private void OnInspectorUpdate()
     {
+        // Repaint the UI if the user changes their selection
         Repaint();
     }
 

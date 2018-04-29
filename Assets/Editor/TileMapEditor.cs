@@ -13,11 +13,13 @@ public class TileMapEditor : Editor
 
     private void OnEnable()
     {
+        // Load or create layers asset
         if (!LoadLayersAsset())
         {
             CreateLayersAsset();
         }
 
+        // Setup re-orderable list for managing layers
         layersList = new ReorderableList(layers.layers, typeof(string));
         layersList.drawHeaderCallback = (Rect rect) => {
             GUI.Label(rect, "Layers");
@@ -27,6 +29,7 @@ public class TileMapEditor : Editor
         layersList.onRemoveCallback = RemoveLayer;
         layersList.onReorderCallback = ReorderLayers;
 
+        // If there are no layers, make a default one
         if (layers.layers.Count == 0)
         {
             TileMapLayers.Layer layer = new TileMapLayers.Layer();
@@ -79,9 +82,11 @@ public class TileMapEditor : Editor
     {
         TileMapLayers.Layer layer = (TileMapLayers.Layer)layersList.list[index];
 
+        // Add some padding
         rect.yMin++;
         rect.height -= 2f;
 
+        // Enabled checkbox
         bool wasEnabled = layer.enabled;
         layer.enabled = EditorGUI.Toggle(new Rect(rect.position, new Vector2(rect.height, rect.height)), layer.enabled);
         if (layer.enabled != wasEnabled)
@@ -95,6 +100,7 @@ public class TileMapEditor : Editor
 
         rect.xMin += rect.height + 2f;
 
+        // Layer name textbox
         string newName = EditorGUI.TextField(rect, layer.name);
         if (layer.name != newName)
         {
@@ -148,6 +154,7 @@ public class TileMapEditor : Editor
     {
         TileMap tileMap = (TileMap)target;
 
+        // Texture atlas input
         tileMap.TextureAtlas =
             (Texture2D)EditorGUILayout.ObjectField(
                 "Texture Atlas",
@@ -156,11 +163,14 @@ public class TileMapEditor : Editor
                 true
             );
 
+        // Draw layers list
         layersList.DoLayoutList();
 
+        // Object input to store baked layers
         tileMap.BakedTileMap = (Transform)EditorGUILayout.ObjectField("Baked Tile Map", tileMap.BakedTileMap, typeof(Transform), true);
         if (GUILayout.Button("Bake Level"))
         {
+            // Remove old baked layers
             List<Transform> children = new List<Transform>();
             foreach (Transform child in tileMap.BakedTileMap)
             {
@@ -171,15 +181,18 @@ public class TileMapEditor : Editor
                 DestroyImmediate(child.gameObject);
             }
 
+            // Create new list of textures and sprites
             tileMap.LayerTextures = new Texture2D[layers.layers.Count];
             tileMap.LayerSprites = new Sprite[layers.layers.Count];
             for (int i = 0; i < layers.layers.Count; i++)
             {
+                // Don't bake disabled layers
                 if (!layers.layers[i].enabled) continue;
 
                 Transform layerTransform = GetLayerTransform(tileMap, layers.layers[i].name);
                 Vector2 layerPosition;
 
+                // Bake the layer into a texture, then make a sprite for that texture
                 tileMap.LayerTextures[i] = TileMapBaking.BakeLayerTexture(layerTransform, out layerPosition);
                 tileMap.LayerSprites[i] = Sprite.Create(
                     tileMap.LayerTextures[i],
@@ -191,6 +204,7 @@ public class TileMapEditor : Editor
                     32f
                 );
 
+                // Create the object to render the baked layer
                 GameObject bakedLayer = new GameObject(layers.layers[i].name);
                 bakedLayer.transform.SetParent(tileMap.BakedTileMap);
                 bakedLayer.transform.position = layerPosition;
@@ -198,9 +212,11 @@ public class TileMapEditor : Editor
                 renderer.sprite = tileMap.LayerSprites[i];
                 renderer.sortingOrder = -i;
 
+                // Bake collisions for the layer
                 PolygonCollider2D collider = bakedLayer.AddComponent<PolygonCollider2D>();
                 List<List<Vector2>> paths = CollisionBaking.BakeLayer(layerTransform);
                 collider.pathCount = paths.Count;
+                // Apply results to collider object
                 for (int pathIndex = 0; pathIndex < paths.Count; pathIndex++)
                 {
                     Vector2[] path = paths[pathIndex].ToArray();
@@ -213,6 +229,7 @@ public class TileMapEditor : Editor
             }
         }
 
+        // Level save name textbox
         levelFileName = EditorGUILayout.TextField("File Name", levelFileName);
         if (GUILayout.Button("Save Level to File"))
         {
@@ -226,10 +243,12 @@ public class TileMapEditor : Editor
 
     private void OnSceneGUI()
     {
+        // If no layer is selected
         if (layersList.index == -1) return;
 
         Transform layer = GetLayerTransform((TileMap)target, layers.layers[layersList.index].name);
 
+        // If the user left clicks (and) drags the mouse, create tiles
         if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
         {
             CreateTile(((TileMap)target).SpriteSelection, layer);
@@ -241,6 +260,7 @@ public class TileMapEditor : Editor
             Event.current.Use();
         }
 
+        // If the user right clicks (and) drags the mouse, remove tiles
         if (Event.current.type == EventType.MouseDown && Event.current.button == 1)
         {
             RemoveTile(layer);
@@ -252,6 +272,7 @@ public class TileMapEditor : Editor
             Event.current.Use();
         }
 
+        // Stop the editor from de-selecting the tile map when clicking
         if (Event.current.type == EventType.Layout)
         {
             HandleUtility.AddDefaultControl(0);
@@ -264,6 +285,7 @@ public class TileMapEditor : Editor
 
         Vector3 position = GetNewTilePosition();
 
+        // If there's already a tile in this position, just change the sprite
         Transform oldTile = FindTile(layer, position);
         if (oldTile != null)
         {
@@ -272,6 +294,7 @@ public class TileMapEditor : Editor
             return;
         }
 
+        // Create the tile
         GameObject tile = new GameObject("Tile");
         tile.transform.SetParent(layer);
         tile.transform.position = position;
@@ -291,6 +314,7 @@ public class TileMapEditor : Editor
     private Transform GetLayerTransform(TileMap tileMap, string layerName)
     {
         Transform layer = tileMap.transform.Find(layerName);
+        // If the layer object with this name is not found, create it
         if (layer == null)
         {
             GameObject newLayer = new GameObject(layerName);
@@ -316,7 +340,9 @@ public class TileMapEditor : Editor
 
     private Vector3 GetNewTilePosition()
     {
+        // Convert screen position to world position
         Vector3 position = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition).origin;
+        // Round the position to align the tile to the grid
         position.x = Mathf.Floor(position.x);
         position.y = Mathf.Ceil(position.y);
         position.z = 0f;
