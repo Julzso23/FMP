@@ -128,18 +128,18 @@ public class TileMapEditor : Editor
     {
         layers = ScriptableObject.CreateInstance<TileMapLayers>();
 
-        if (!AssetDatabase.IsValidFolder("Assets/Tile Map"))
+        if (!AssetDatabase.IsValidFolder("Assets/Tile Map Editor"))
         {
-            AssetDatabase.CreateFolder("Assets", "Tile map");
+            AssetDatabase.CreateFolder("Assets", "Tile Map Editor");
         }
-        AssetDatabase.CreateAsset(layers, "Assets/Tile Map/Layers.asset");
+        AssetDatabase.CreateAsset(layers, "Assets/Tile Map Editor/Layers.asset");
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
     }
 
     private bool LoadLayersAsset()
     {
-        TileMapLayers asset = AssetDatabase.LoadAssetAtPath<TileMapLayers>("Assets/Tile Map/Layers.asset");
+        TileMapLayers asset = AssetDatabase.LoadAssetAtPath<TileMapLayers>("Assets/Tile Map Editor/Layers.asset");
 
         if (asset == null)
         {
